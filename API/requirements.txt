@@ -3,5 +3,5 @@ fastapi-users[sqlalchemy]
 sqlalchemy[asyncio]
 aiomysql
 Cryptography
-alembic
+alembic>=1.13.0
 pydantic-settings
