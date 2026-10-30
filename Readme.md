@@ -13,6 +13,104 @@ Proyecto base para una aplicación con un backend en FastAPI, un frontend JavaSc
 - [Docker](https://docs.docker.com/get-docker/)
 - Docker Compose, incluido en Docker Desktop y en las versiones actuales de Docker mediante el comando `docker compose`
 
+## Starter pack: puesta en marcha desde cero
+
+Copia y pega estos comandos **desde la raíz del proyecto** (donde está `docker-compose.yml`). Con esto ya puedes empezar a desarrollar.
+
+```bash
+# 1. Levantar backend y base de datos (construye las imágenes si hace falta)
+#    Añade `front` al final cuando el frontend tenga su package.json
+docker compose up --build -d db phpmyadmin api
+
+# 2. Esperar a que MySQL esté listo
+until docker compose exec -T db mysqladmin ping -h localhost -u root -proot_password --silent; do
+  echo "Esperando a MySQL..."
+  sleep 2
+done
+
+# 3. Aplicar las migraciones de Alembic (crea las tablas)
+docker compose exec api alembic upgrade head
+
+# 4. Comprobar que todo está arriba y que la BD está al día
+docker compose ps
+docker compose exec api alembic current
+```
+
+Servicios disponibles tras el arranque:
+
+| Servicio | URL |
+| --- | --- |
+| API FastAPI | http://localhost:8000 |
+| Documentación de la API | http://localhost:8000/docs |
+| Frontend | http://localhost:3000 |
+| phpMyAdmin | http://localhost:8080 |
+| MySQL (desde el host) | `localhost:3307` |
+
+Credenciales de MySQL: usuario `platano_user`, contraseña `platano_password`, base de datos `mi_base_datos`.
+
+> El frontend todavía no tiene `package.json`, así que el starter pack solo levanta backend y base de datos. Cuando el frontend esté listo, ejecuta `docker compose up --build -d` para levantar todo.
+
+### Comandos del día a día
+
+```bash
+# Ver logs en vivo (todos o de un servicio concreto)
+docker compose logs -f
+docker compose logs -f api
+
+# Reiniciar un servicio tras cambiar código/dependencias
+docker compose restart api
+docker compose up --build -d api
+
+# Entrar a una shell dentro del contenedor del API
+docker compose exec api bash
+
+# Abrir la consola de MySQL
+docker compose exec db mysql -u platano_user -pplatano_password mi_base_datos
+
+# Parar todo (conserva los datos)
+docker compose down
+
+# Parar todo y borrar la base de datos (empezar de cero)
+docker compose down -v
+```
+
+### Tras cambiar los modelos de SQLAlchemy
+
+```bash
+# 1. Generar la migración automáticamente
+docker compose exec api alembic revision --autogenerate -m "descripcion_del_cambio"
+
+# 2. Revisar el archivo generado en API/alembic/versions/ y aplicarlo
+docker compose exec api alembic upgrade head
+```
+
+### Reset completo de la base de datos
+
+```bash
+docker compose down -v
+docker compose up --build -d db phpmyadmin api
+until docker compose exec -T db mysqladmin ping -h localhost -u root -proot_password --silent; do sleep 2; done
+docker compose exec api alembic upgrade head
+```
+
+### Ejecutar el API o Alembic en local (sin Docker para el API)
+
+```bash
+cd API
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Crear el .env (MySQL del compose se expone en el puerto 3307 del host)
+cat > .env <<'EOF'
+DATABASE_URL=mysql+aiomysql://platano_user:platano_password@localhost:3307/mi_base_datos
+SECRET_KEY=secret
+EOF
+
+alembic upgrade head
+fastapi dev main.py --host 0.0.0.0 --port 8000
+```
+
 ## Levantar el proyecto
 
 Desde la carpeta raíz del proyecto, donde se encuentra `docker-compose.yml`, ejecuta:
