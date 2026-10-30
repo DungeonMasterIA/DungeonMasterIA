@@ -67,6 +67,9 @@ docker compose exec api bash
 # Abrir la consola de MySQL
 docker compose exec db mysql -u platano_user -pplatano_password mi_base_datos
 
+# Ejecutar la suite de tests (registro, login y JWT)
+docker compose exec api pytest
+
 #Ejecutar los tests de el backend
 docker exec -it fastapi_backend pytest
 

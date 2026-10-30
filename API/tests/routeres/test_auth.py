@@ -1,91 +1,102 @@
-# API/tests/routers/test_auth.py
 import pytest
 
-# Nota: El 'client' se inyecta automáticamente desde el conftest.py
+pytestmark = pytest.mark.anyio
 
-def test_register_user_success(client):
-    """
-    Test 1 (Rojo -> Verde): Validar que el registro automático 
-    de FastAPI Users devuelva 201 y el JSON del usuario creado.
-    """
+
+async def test_register_user_success(client):
     payload = {
         "email": "testuser@example.com",
         "password": "PasswordSeguro123!",
-        "is_active": True,
-        "is_superuser": False,
-        "is_verified": False
+        "name": "Test User",
     }
-    
-    # Por defecto, FastAPI Users suele registrar en /auth/register
-    # Ajusta la URL si en tus routers le pusiste un prefijo diferente (ej: /api/v1/auth/register)
-    response = client.post("/auth/register", json=payload)
-    
+
+    response = await client.post("/auth/register", json=payload)
+
     assert response.status_code == 201
-    
+
     data = response.json()
     assert "id" in data
     assert data["email"] == "testuser@example.com"
+    assert data["name"] == "Test User"
     assert data["is_active"] is True
+    assert data["is_superuser"] is False
+    assert data["is_verified"] is False
 
 
-def test_register_user_duplicate_email(client):
-    """
-    Test 2: Validar que intentar registrar el mismo email 
-    devuelva un error 400 Bad Request estructurado.
-    """
+async def test_register_user_duplicate_email(client):
     payload = {
         "email": "duplicate@example.com",
-        "password": "PasswordSeguro123!"
+        "password": "PasswordSeguro123!",
+        "name": "Duplicate User",
     }
-    
-    # Primer registro exitoso
-    client.post("/auth/register", json=payload)
-    
-    # Segundo registro con el mismo email
-    response = client.post("/auth/register", json=payload)
-    
+
+    first_response = await client.post("/auth/register", json=payload)
+    assert first_response.status_code == 201
+
+    response = await client.post("/auth/register", json=payload)
+
     assert response.status_code == 400
     assert response.json() == {"detail": "REGISTER_USER_ALREADY_EXISTS"}
 
 
-def test_login_success(client):
-    """
-    Test 3: Validar que el login por OAuth2 (Form Data) devuelva 
-    el token de acceso correctamente al autenticarse.
-    """
-    # 1. Creamos el usuario primero para poder loguearnos
+async def test_login_success(client):
     register_payload = {
         "email": "login@example.com",
-        "password": "PasswordSeguro123!"
+        "password": "PasswordSeguro123!",
+        "name": "Login User",
     }
-    client.post("/auth/register", json=register_payload)
-    
-    # 2. FastAPI Users usa la especificación OAuth2, requiere enviar los datos como Form Data (data=), no como JSON.
+    register_response = await client.post("/auth/register", json=register_payload)
+    assert register_response.status_code == 201
+
     login_data = {
         "username": "login@example.com",
-        "password": "PasswordSeguro123!"
+        "password": "PasswordSeguro123!",
     }
-    
-    # Por defecto el endpoint de login suele ser /auth/jwt/login o /auth/login
-    response = client.post("/auth/jwt/login", data=login_data)
-    
+
+    response = await client.post("/auth/jwt/login", data=login_data)
+
     assert response.status_code == 200
-    
+
     data = response.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
 
 
-def test_login_invalid_credentials(client):
-    """
-    Test 4: Validar el fallo de autenticación con credenciales erróneas.
-    """
+async def test_login_invalid_credentials(client):
     login_data = {
         "username": "nonexistent@example.com",
-        "password": "WrongPassword!"
+        "password": "WrongPassword!",
     }
-    
-    response = client.post("/auth/jwt/login", data=login_data)
-    
+
+    response = await client.post("/auth/jwt/login", data=login_data)
+
     assert response.status_code == 400
     assert response.json() == {"detail": "LOGIN_BAD_CREDENTIALS"}
+
+
+async def test_current_user_with_jwt(client):
+    register_payload = {
+        "email": "jwt@example.com",
+        "password": "PasswordSeguro123!",
+        "name": "JWT User",
+    }
+    register_response = await client.post("/auth/register", json=register_payload)
+    assert register_response.status_code == 201
+
+    login_response = await client.post(
+        "/auth/jwt/login",
+        data={
+            "username": "jwt@example.com",
+            "password": "PasswordSeguro123!",
+        },
+    )
+    assert login_response.status_code == 200
+
+    token = login_response.json()["access_token"]
+    response = await client.get(
+        "/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "jwt@example.com"
