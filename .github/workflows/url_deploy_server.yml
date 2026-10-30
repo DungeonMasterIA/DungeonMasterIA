@@ -1,0 +1,22 @@
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+jobs:
+    #hacemos deploy automatico al server
+    deploy: 
+        # Esta condición asegura que el flujo SOLO continúe si el PR fue fusionado (merged)
+        # y no simplemente cerrado sin aceptar los cambios.
+        # if: github.event.pull_request.merged == true
+        
+        # runs-on: ubuntu-latest
+        # steps:
+        # - name: Checkout del código
+        #    uses: actions/checkout@v4
+
+        # - name: Ejecutar despliegue
+        #     run: |
+        #     echo "El PR hacia main fue aprobado y fusionado. Iniciando despliegue..."
+        #     Tus comandos de despliegue aquí

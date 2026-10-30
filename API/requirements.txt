@@ -5,3 +5,5 @@ aiomysql
 Cryptography
 alembic>=1.13.0
 pydantic-settings
+pytest==8.3.3
+httpx==0.27.2
