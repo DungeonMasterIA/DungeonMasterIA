@@ -1,14 +1,19 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
+from fastapi_users import schemas
 
 
-class UserCreate(BaseModel):
+class UserCreate(schemas.BaseUserCreate):
     name: str
 
 
-class UserRead(BaseModel):
+class UserUpdate(schemas.BaseUserUpdate):
+    name: str | None = None
+
+
+class UserRead(schemas.BaseUser[uuid.UUID]):
     id: uuid.UUID
     name: str
     created_at: datetime
