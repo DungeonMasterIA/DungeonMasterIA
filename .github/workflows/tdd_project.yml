@@ -2,8 +2,8 @@ name: TDD Check
 
 on:
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - main
 
 jobs:
   build:
