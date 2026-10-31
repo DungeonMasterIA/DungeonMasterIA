@@ -1,22 +1,36 @@
+name: Deploy to Staging
+
 on:
   pull_request:
     branches:
       - main
     types:
       - closed
+      
 jobs:
-    #hacemos deploy automatico al server
-    deploy: 
-        # Esta condición asegura que el flujo SOLO continúe si el PR fue fusionado (merged)
-        # y no simplemente cerrado sin aceptar los cambios.
-        # if: github.event.pull_request.merged == true
-        
-        # runs-on: ubuntu-latest
-        # steps:
-        # - name: Checkout del código
-        #    uses: actions/checkout@v4
+    deploy:
+        runs-on: ubuntu-latest
+        environment: Staging
+        steps:
+          - name: Comprobar secretos de despliegue
+            env:
+              TOKEN_DEPLOY: ${{ secrets.TOKEN_DEPLOY }}
+              URL_DEPLOY: ${{ secrets.URL_DEPLOY }}
+            run: |
+              missing=0
 
-        # - name: Ejecutar despliegue
-        #     run: |
-        #     echo "El PR hacia main fue aprobado y fusionado. Iniciando despliegue..."
-        #     Tus comandos de despliegue aquí
+              if [ -n "$TOKEN_DEPLOY" ]; then
+                echo "TOKEN_DEPLOY detectado: tiene valor"
+              else
+                echo "::error::TOKEN_DEPLOY no tiene valor"
+                missing=1
+              fi
+
+              if [ -n "$URL_DEPLOY" ]; then
+                echo "URL_DEPLOY detectado: tiene valor"
+              else
+                echo "::error::URL_DEPLOY no tiene valor"
+                missing=1
+              fi
+
+              exit $missing
