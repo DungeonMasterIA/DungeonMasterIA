@@ -4,4 +4,26 @@ on:
   push:
     branches:
       - '**'
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Staging
+    steps:      
+      - name: Levantar Docker
+        run: |
+          docker compose up --build -d db api
+          until docker compose exec -T db mysqladmin ping -h localhost -u root -proot_password --silent; do
+            sleep 2
+          done
+          docker compose exec -T api alembic upgrade head
+
+      - name: Ejecutar TDD
+        run: docker compose exec -T api pytest
+
+      - name: Devolver OK
+        run: echo "OK"
+
+      - name: Logs de Docker (si falla)
+        if: failure()
+        run: docker compose logs
