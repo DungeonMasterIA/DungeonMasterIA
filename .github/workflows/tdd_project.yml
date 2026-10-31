@@ -13,9 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir imagen del API (con caché)
+        uses: docker/bake-action@v6
+        with:
+          files: docker-compose.yml
+          targets: api
+          load: true
+          set: |
+            api.cache-from=type=gha,scope=api
+            api.cache-to=type=gha,scope=api,mode=max
+
       - name: Levantar Docker
         run: |
-          docker compose up --build -d db api
+          docker compose up -d db api
           until docker compose exec -T db mysqladmin ping -h 127.0.0.1 -u root -proot_password --silent; do
             sleep 2
           done
