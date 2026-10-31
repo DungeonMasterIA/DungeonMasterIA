@@ -191,3 +191,8 @@ Ver únicamente los logs del API o del frontend:
 docker compose logs -f api
 docker compose logs -f front
 ```
+
+# Integrantes
+- Roberto Blasco (RBDay)
+- Angel Expósito (computationalgoblin)
+- Jorge Veiga (jorvecho)
